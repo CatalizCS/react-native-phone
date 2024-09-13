@@ -10,16 +10,18 @@ const DetailListItem = ({
 	icon,
 	title,
 	subtitle,
+	onPress = () => {},
 }: {
 	icon: string;
 	title: string;
 	subtitle?: string;
+	onPress?: () => void;
 }) => {
 	return (
 		<TouchableHighlight
 			underlayColor={colors.gray}
 			style={styles.container}
-			onPress={() => {}}
+			onPress={onPress}
 		>
 			<View style={styles.detailInfo}>
 				<View style={styles.iconContainer}>

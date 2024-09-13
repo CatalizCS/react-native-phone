@@ -15,18 +15,22 @@ interface ContactListItemProps {
 	name: string;
 	avatar: ImageSourcePropType;
 	phone: string;
+	favorite: boolean;
 	onPress: () => void;
+  onLongPress?: () => void;
 }
 
 export function ContactListItem({
 	name,
 	avatar,
 	phone,
+	favorite,
 	onPress,
+  onLongPress,
 }: ContactListItemProps) {
 	console.table({ name, avatar, phone, onPress });
 	return (
-		<TouchableOpacity style={styles.container} onPress={onPress}>
+		<TouchableOpacity style={styles.container} onPress={onPress} onLongPress={onLongPress}>
 			<View style={styles.contactInfo}>
 				<Image style={styles.avatar} source={avatar} />
 				<View style={styles.details}>

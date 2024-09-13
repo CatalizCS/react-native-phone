@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
-import { useColorScheme, View } from "react-native";
+import { Dimensions, useColorScheme, View } from "react-native";
 
 import ContactScreen from "../screens/Contact";
 import ProfileScreen from "@/screens/Profile";
@@ -11,6 +11,7 @@ import { colors } from "@/utility/colors";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import UserScreen from "@/screens/User";
 import OptionsScreen from "@/screens/Options";
+import CallScreen from "@/screens/Call";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -28,14 +29,20 @@ const darkTheme = {
 };
 
 const headerStyle: any = (theme: any) => {
+	const { width } = Dimensions.get("window");
 	return {
 		headerTintColor: theme.text,
 		headerStyle: {
 			backgroundColor: theme.primary,
-			height: 40,
+			height: width > 600 ? 100 : 50,
 		},
 		headerTitleAlign: "center",
-		headerTitleStyle: { fontWeight: "bold", fontSize: 24, height: 50 },
+		headerTitleStyle: {
+			fontWeight: "bold",
+			fontSize: 25,
+			height: 25,
+			alignItems: "center",
+		},
 	};
 };
 
@@ -74,6 +81,15 @@ function ContactScreens() {
 						headerTintColor: theme.text,
 						headerStyle: { backgroundColor: theme.primary },
 					};
+				}}
+			/>
+			<Stack.Screen
+				name="Call"
+				component={CallScreen}
+				options={{
+					headerTintColor: theme.text,
+					headerStyle: { backgroundColor: theme.primary },
+					header: () => <View />,
 				}}
 			/>
 		</Stack.Navigator>
@@ -115,7 +131,7 @@ function FavoritesScreens() {
 	);
 }
 
-function UserScreens({ navigation }: any) {
+function UserScreens() {
 	const { theme } = useContext(ThemeContext);
 
 	return (
@@ -130,39 +146,6 @@ function UserScreens({ navigation }: any) {
 						backgroundColor: theme.primary,
 						height: 40,
 					},
-					headerRight: () => (
-						<View
-							style={{
-								height: 30,
-								justifyContent: "center",
-								marginRight: 10,
-								width: 40,
-							}}
-						>
-							<MaterialIcons
-								name="settings"
-								size={30}
-								style={{
-									color: theme.text,
-								}}
-								onPress={() => {
-									navigation.navigate("Options", {
-										name: "Options",
-										headerTintColor: theme.text,
-										headerStyle: {
-											backgroundColor: theme.primary,
-											height: 40,
-										},
-										headerTitleAlign: "center",
-										headerTitleStyle: {
-											fontWeight: "bold",
-											fontSize: 24,
-										},
-									});
-								}}
-							/>
-						</View>
-					),
 				}}
 			/>
 			<Stack.Screen
@@ -183,7 +166,7 @@ function UserScreens({ navigation }: any) {
 	);
 }
 
-export default function AppNavigator({ navigation }: any) {
+export default function AppNavigator() {
 	const colorScheme = useColorScheme();
 	const [isDarkMode, setIsDarkMode] = useState(colorScheme === "dark");
 	const theme = isDarkMode ? darkTheme : lightTheme;

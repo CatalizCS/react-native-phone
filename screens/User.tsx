@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import ContactThumbnail from "../components/ContactThumbnail";
 import { Contact, fetchUserContact } from "../utility/api";
 import { colors } from "../utility/colors";
@@ -26,7 +26,7 @@ export default function UserScreen({ navigation }: any) {
 
 	return (
 		<View style={styles.container}>
-			{loading && <Text>Loading...</Text>}
+			{loading && <ActivityIndicator size="large" color="#ffffff" />}
 			{error && <Text>Error...</Text>}
 			{!loading && !error && (
 				<ContactThumbnail

@@ -6,6 +6,12 @@ export default function OptionsScreen({ navigation }: any) {
 	return (
 		<View style={styles.container}>
 			<DetailListItem title="Update Profile" icon={""} subtitle={""} />
+			<DetailListItem
+				title="Change Theme"
+				icon={""}
+				subtitle={""}
+				onPress={() => {}}
+			/>
 			<DetailListItem title="Change Language" icon={""} subtitle={""} />
 			<DetailListItem title="Sign Out" icon={""} subtitle={""} />
 		</View>

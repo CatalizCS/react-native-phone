@@ -8,6 +8,7 @@ export interface Contact {
 	phone: string;
 	cell: string;
 	email: string;
+	favorite: boolean;
 }
 
 const mapContact = (contact: {
@@ -16,6 +17,7 @@ const mapContact = (contact: {
 	phone: string;
 	cell: string;
 	email: string;
+	favorite: boolean;
 }) => {
 	return {
 		id: v4(),
@@ -24,6 +26,7 @@ const mapContact = (contact: {
 		phone: contact.phone,
 		cell: contact.cell,
 		email: contact.email,
+		favorite: false,
 	};
 };
 

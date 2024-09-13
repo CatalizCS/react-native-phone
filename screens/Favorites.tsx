@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, FlatList } from "react-native";
+import {
+	StyleSheet,
+	Text,
+	View,
+	FlatList,
+	ActivityIndicator,
+} from "react-native";
 import { fetchContacts } from "../utility/api";
 import ContactThumbnail from "../components/ContactThumbnail";
 import { NavigationProp } from "@react-navigation/native";
@@ -18,16 +24,34 @@ export default function FavoritesScreen({
 	const [error, setError] = useState(false);
 
 	useEffect(() => {
-		fetchContacts()
-			.then((contacts) => {
-				setContacts(contacts);
-				setLoading(false);
-				setError(false);
-			})
-			.catch((e) => {
-				setLoading(false);
-				setError(true);
-			});
+		const unsubscribe = navigation.addListener("focus", () => {
+			const favorites = contacts.filter((contact) =>
+				globalThis.favoriteContacts.has(contact.phone) && contact.favorite
+			);
+			setContacts(favorites);
+		});
+
+		if (globalThis.favoriteContacts.size === 0) {
+			fetchContacts()
+				.then((contacts) => {
+					setContacts(contacts);
+					setLoading(false);
+					setError(false);
+				})
+				.catch((e) => {
+					setLoading(false);
+					setError(true);
+				});
+		} else {
+			const favorites = contacts.filter((contact) =>
+				globalThis.favoriteContacts.has(contact.phone) && contact.favorite
+			);
+			setContacts(favorites);
+			setLoading(false);
+			setError(false);
+		}
+
+		return unsubscribe;
 	}, []);
 
 	const renderFavoriteThumbnail = ({
@@ -51,7 +75,13 @@ export default function FavoritesScreen({
 
 	return (
 		<View style={styles.container}>
-			{loading && <Text>Loading...</Text>}
+			{loading && (
+				<ActivityIndicator
+					color={"blue"}
+					size={"large"}
+					style={styles.loadingIndicator}
+				/>
+			)}
 			{error && <Text>Error...</Text>}
 			{!loading && !error && (
 				<FlatList
@@ -73,6 +103,11 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	list: {
+		alignItems: "center",
+	},
+	loadingIndicator: {
+		flex: 1,
+		justifyContent: "center",
 		alignItems: "center",
 	},
 });
