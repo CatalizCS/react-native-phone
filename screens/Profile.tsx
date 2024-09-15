@@ -15,7 +15,6 @@ export default function ProfileScreen({ route }: any) {
 
 	const { avatar, phone, cell, email } = contact;
 
-	console.log(contact);
 	const name = contact.name
 		? `${contact.name.title} ${contact.name.first} ${contact.name.last}`
 		: "";

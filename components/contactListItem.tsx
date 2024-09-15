@@ -24,7 +24,6 @@ export function ContactListItem({
 	name,
 	avatar,
 	phone,
-	favorite,
 	onPress,
   onLongPress,
 }: ContactListItemProps) {

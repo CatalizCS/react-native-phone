@@ -1,31 +1,48 @@
 import React, { createContext, useContext, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+	NavigationContainer,
+	useNavigationState,
+} from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
-import { Dimensions, useColorScheme, View } from "react-native";
+import { Dimensions, useColorScheme } from "react-native";
+import { Audio } from "expo-av";
+import { Platform } from "react-native";
 
-import ContactScreen from "../screens/Contact";
+import { FavoritesProvider } from "@/context/FavoritesContext";
+
+import ContactScreen from "@/screens/Contact";
 import ProfileScreen from "@/screens/Profile";
 import FavoritesScreen from "@/screens/Favorites";
-import { colors } from "@/utility/colors";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import UserScreen from "@/screens/User";
 import OptionsScreen from "@/screens/Options";
 import CallScreen from "@/screens/Call";
+import SoundContext from "@/context/SoundContext";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
 
 const lightTheme = {
-	background: "white",
-	text: "black",
-	primary: "white",
+	background: "#FFFFFF",
+	text: "#333333",
+	primary: "#6200EE",
+	accent: "#03DAC6",
+	secondary: "#018786",
+	surface: "#F5F5F5",
+	error: "#B00020",
+	transparent: "rgba(0,0,0,0)",
 };
 
 const darkTheme = {
-	background: "black",
-	text: "white",
-	primary: "coral",
+	background: "#121212",
+	text: "#E1E1E1",
+	primary: "#BB86FC",
+	accent: "#03DAC6",
+	secondary: "#03DAC6",
+	surface: "#1E1E1E",
+	error: "#CF6679",
+	transparent: "rgba(0,0,0,0)",
 };
 
 const headerStyle: any = (theme: any) => {
@@ -33,15 +50,18 @@ const headerStyle: any = (theme: any) => {
 	return {
 		headerTintColor: theme.text,
 		headerStyle: {
-			backgroundColor: theme.primary,
+			backgroundColor: theme.surface,
 			height: width > 600 ? 100 : 50,
+			shadowColor: "rgba(0,0,0,0.1)",
+			shadowOpacity: 0.25,
+			shadowOffset: { width: 0, height: 2 },
+			shadowRadius: 4,
 		},
 		headerTitleAlign: "center",
 		headerTitleStyle: {
 			fontWeight: "bold",
-			fontSize: 25,
-			height: 25,
-			alignItems: "center",
+			fontSize: 24,
+			color: theme.primary,
 		},
 	};
 };
@@ -81,15 +101,6 @@ function ContactScreens() {
 						headerTintColor: theme.text,
 						headerStyle: { backgroundColor: theme.primary },
 					};
-				}}
-			/>
-			<Stack.Screen
-				name="Call"
-				component={CallScreen}
-				options={{
-					headerTintColor: theme.text,
-					headerStyle: { backgroundColor: theme.primary },
-					header: () => <View />,
 				}}
 			/>
 		</Stack.Navigator>
@@ -141,7 +152,6 @@ function UserScreens() {
 				component={UserScreen}
 				options={{
 					headerTitle: "Me",
-					headerTintColor: theme.text,
 					headerStyle: {
 						backgroundColor: theme.primary,
 						height: 40,
@@ -153,13 +163,89 @@ function UserScreens() {
 				component={OptionsScreen}
 				options={{
 					title: "Options",
-					headerTintColor: theme.text,
+					headerTintColor: theme.error,
 					headerStyle: {
 						backgroundColor: theme.primary,
-						height: 50,
+						height: 40,
 					},
 					headerTitleAlign: "center",
 					headerTitleStyle: { fontWeight: "bold", fontSize: 24, height: 50 },
+				}}
+			/>
+		</Stack.Navigator>
+	);
+}
+
+function TabNavigator() {
+	const { theme } = useContext(ThemeContext);
+	const state = useNavigationState((state) => state);
+	const isCallActive = state.routes[state.index].name === "Call";
+
+	const getTabBarIcon = (iconName: string, focused: boolean) => {
+		return ({ color }: { color: string }) => (
+			<MaterialIcons
+				name={iconName}
+				color={focused ? theme.primary : theme.secondary}
+				size={26}
+			/>
+		);
+	};
+
+	return (
+		<Tab.Navigator
+			initialRouteName="ContactsScreens"
+			barStyle={{
+				backgroundColor: theme.surface,
+				height: 65,
+				alignContent: "center",
+				display: isCallActive ? "none" : "flex",
+			}}
+			screenOptions={({ route }) => ({
+				tabBarLabel: route.name,
+			})}
+			labeled={false}
+			activeColor={theme.primary}
+			inactiveColor={theme.secondary}
+		>
+			<Tab.Screen
+				name="ContactScreens"
+				component={ContactScreens}
+				options={{
+					tabBarIcon: ({ focused, color }) =>
+						getTabBarIcon("list", focused)({ color }),
+					tabBarColor: theme.surface,
+				}}
+			/>
+			<Tab.Screen
+				name="FavoritesScreens"
+				component={FavoritesScreens}
+				options={{
+					tabBarIcon: ({ focused, color }) =>
+						getTabBarIcon("star", focused)({ color }),
+					tabBarColor: theme.surface,
+				}}
+			/>
+			<Tab.Screen
+				name="UserScreen"
+				component={UserScreens}
+				options={{
+					tabBarIcon: ({ focused, color }) =>
+						getTabBarIcon("person", focused)({ color }),
+					tabBarColor: theme.surface,
+				}}
+			/>
+		</Tab.Navigator>
+	);
+}
+function MainNavigation() {
+	return (
+		<Stack.Navigator screenOptions={{ headerShown: false }}>
+			<Stack.Screen name="MainTabs" component={TabNavigator} />
+			<Stack.Screen
+				name="Call"
+				component={CallScreen}
+				options={{
+					headerShown: false,
 				}}
 			/>
 		</Stack.Navigator>
@@ -171,47 +257,21 @@ export default function AppNavigator() {
 	const [isDarkMode, setIsDarkMode] = useState(colorScheme === "dark");
 	const theme = isDarkMode ? darkTheme : lightTheme;
 
+	React.useEffect(() => {
+		SoundContext.getInstance();
+	}, []);
+
 	const toggleTheme = () => {
 		setIsDarkMode(!isDarkMode);
 	};
 
 	return (
-		<ThemeContext.Provider value={{ theme, toggleTheme }}>
-			<NavigationContainer independent={true}>
-				<Tab.Navigator
-					initialRouteName="ContactsScreens"
-					barStyle={{
-						backgroundColor: theme.primary,
-						height: 65,
-						alignContent: "center",
-					}}
-					labeled={false}
-					activeColor={theme.text}
-					inactiveColor={colors.gray}
-				>
-					<Tab.Screen
-						name="ContactScreens"
-						component={ContactScreens}
-						options={{
-							tabBarIcon: getTabBarIcon("list"),
-						}}
-					/>
-					<Tab.Screen
-						name="FavoritesScreens"
-						component={FavoritesScreens}
-						options={{
-							tabBarIcon: getTabBarIcon("star"),
-						}}
-					/>
-					<Tab.Screen
-						name="UserScreen"
-						component={UserScreens}
-						options={{
-							tabBarIcon: getTabBarIcon("person"),
-						}}
-					/>
-				</Tab.Navigator>
-			</NavigationContainer>
-		</ThemeContext.Provider>
+		<FavoritesProvider>
+			<ThemeContext.Provider value={{ theme, toggleTheme }}>
+				<NavigationContainer independent={true}>
+					<MainNavigation />
+				</NavigationContainer>
+			</ThemeContext.Provider>
+		</FavoritesProvider>
 	);
 }

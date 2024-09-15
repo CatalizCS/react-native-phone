@@ -1,89 +1,37 @@
-import React, { useState, useEffect } from "react";
-import {
-	StyleSheet,
-	Text,
-	View,
-	FlatList,
-	ActivityIndicator,
-} from "react-native";
-import { fetchContacts } from "../utility/api";
-import ContactThumbnail from "../components/ContactThumbnail";
+import React from "react";
+import { StyleSheet, Text, View, FlatList, ListRenderItem } from "react-native";
+import ContactThumbnail from "@/components/ContactThumbnail";
 import { NavigationProp } from "@react-navigation/native";
+import { useFavorites } from "@/context/FavoritesContext";
+import { Contact } from "@/utility/api";
 
-const keyExtractor = ({ phone }: { phone: string }) => phone;
+const keyExtractor = ({ phone }: Contact) => phone;
 
 export default function FavoritesScreen({
 	navigation,
 }: {
 	navigation: NavigationProp<any>;
 }) {
-	const [contacts, setContacts] = useState<
-		{ avatar: string; favorite: boolean; phone: string }[]
-	>([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState(false);
+	const { favorites } = useFavorites();
 
-	useEffect(() => {
-		const unsubscribe = navigation.addListener("focus", () => {
-			const favorites = contacts.filter((contact) =>
-				globalThis.favoriteContacts.has(contact.phone) && contact.favorite
-			);
-			setContacts(favorites);
-		});
-
-		if (globalThis.favoriteContacts.size === 0) {
-			fetchContacts()
-				.then((contacts) => {
-					setContacts(contacts);
-					setLoading(false);
-					setError(false);
-				})
-				.catch((e) => {
-					setLoading(false);
-					setError(true);
-				});
-		} else {
-			const favorites = contacts.filter((contact) =>
-				globalThis.favoriteContacts.has(contact.phone) && contact.favorite
-			);
-			setContacts(favorites);
-			setLoading(false);
-			setError(false);
-		}
-
-		return unsubscribe;
-	}, []);
-
-	const renderFavoriteThumbnail = ({
-		item,
-	}: {
-		item: { avatar: string; [key: string]: any };
-	}) => {
-		const { avatar } = item;
+	const renderFavoriteThumbnail: ListRenderItem<Contact> = ({ item }) => {
+		const { name, picture, phone } = item;
 		return (
 			<ContactThumbnail
-				avatar={avatar}
+				avatar={picture.large}
 				onPress={() => navigation.navigate("Profile", { contact: item })}
-				name={""}
-				phone={""}
-				textColor={""}
+				name={`${name.first} ${name.last}`}
+				phone={phone}
+				textColor={"black"}
 			/>
 		);
 	};
 
-	const favorites = contacts.filter((contact) => contact.favorite);
-
 	return (
 		<View style={styles.container}>
-			{loading && (
-				<ActivityIndicator
-					color={"blue"}
-					size={"large"}
-					style={styles.loadingIndicator}
-				/>
-			)}
-			{error && <Text>Error...</Text>}
-			{!loading && !error && (
+			{favorites.length === 0 ? (
+				<Text style={styles.empty}>You have no favorites yet</Text>
+			) : (
 				<FlatList
 					data={favorites}
 					keyExtractor={keyExtractor}
@@ -105,9 +53,8 @@ const styles = StyleSheet.create({
 	list: {
 		alignItems: "center",
 	},
-	loadingIndicator: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
+	empty: {
+		textAlign: "center",
+		fontSize: 18,
 	},
 });

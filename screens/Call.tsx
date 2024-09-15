@@ -1,21 +1,69 @@
+import SoundContext from "@/context/SoundContext";
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import {
+	View,
+	Text,
+	StyleSheet,
+	TouchableOpacity,
+	Image,
+	Vibration,
+	Platform,
+} from "react-native";
+import { Audio } from "expo-av";
 
 export default function CallScreen({ route, navigation }: any) {
 	const { callerName, callerNumber, avatar } = route.params;
+	const [connecting, setConnecting] = useState(true);
 	const [calling, setCalling] = useState(true);
 	const [callDuration, setCallDuration] = useState(0);
+	const [callEnd, setCallEnd] = useState(false);
+	const [error, setError] = useState(false);
 
 	useEffect(() => {
-		setTimeout(() => {
+		const cancel = setTimeout(() => {
+			setError(true);
+			setTimeout(() => {
+				navigation.popToTop();
+				navigation.navigate("Contacts");
+			}, 3000);
+		}, 60000);
+
+		if (Platform.OS === "web") {
+			clearTimeout(cancel);
 			setCalling(false);
-		}, 2000);
-
-		const timer = setInterval(() => {
-			setCallDuration((prevDuration) => prevDuration + 1);
-		}, 1000);
-
-		return () => clearInterval(timer);
+			Vibration.vibrate([500, 500, 500], false);
+			const timer = setInterval(() => {
+				setCallDuration((prevDuration) => prevDuration + 1);
+			}, 1000);
+			return () => clearInterval(timer);
+		} else {
+			const playRingtone = async () => {
+				await Audio.requestPermissionsAsync();
+				await Audio.setAudioModeAsync({
+					staysActiveInBackground: true,
+					shouldDuckAndroid: false,
+					playThroughEarpieceAndroid: false,
+					allowsRecordingIOS: false,
+					playsInSilentModeIOS: true,
+				});
+				const ringtone = await Audio.Sound.createAsync(
+					require("../sounds/end.mp3"),
+					{
+						shouldPlay: true,
+					}
+				);
+				clearTimeout(cancel);
+				setConnecting(false);
+				Vibration.vibrate([500, 500, 500], false);
+				setCalling(false);
+				await ringtone.sound?.stopAsync();
+				const timer = setInterval(() => {
+					setCallDuration((prevDuration) => prevDuration + 1);
+				}, 1000);
+				return () => clearInterval(timer);
+			};
+			playRingtone();
+		}
 	}, []);
 
 	const formatTime = (seconds: number) => {
@@ -32,9 +80,18 @@ export default function CallScreen({ route, navigation }: any) {
 				<Image source={{ uri: avatar }} style={styles.callerImage} />
 				<Text style={styles.callerName}>{callerName}</Text>
 				<Text style={styles.callerNumber}>{callerNumber}</Text>
-				{calling && <Text style={styles.callDuration}>Calling...</Text>}
-				{!calling && (
+				{error && <Text style={styles.callDuration}>No money left :(</Text>}
+				{!error && connecting && (
+					<Text style={styles.callDuration}>Connecting...</Text>
+				)}
+				{!error && calling && !connecting && (
+					<Text style={styles.callDuration}>Calling...</Text>
+				)}
+				{!error && !connecting && !calling && (
 					<Text style={styles.callDuration}>{formatTime(callDuration)}</Text>
+				)}
+				{!error && !connecting && callEnd && (
+					<Text style={styles.callDuration}>Call Ended</Text>
 				)}
 			</View>
 
@@ -67,10 +124,38 @@ export default function CallScreen({ route, navigation }: any) {
 			<TouchableOpacity
 				style={styles.endCallButton}
 				onPress={() => {
-					setTimeout(() => {
-						navigation.popToTop();
-						navigation.navigate("Contacts");
-					}, 1000);
+					setCallEnd(true);
+					if (Platform.OS === "web") {
+						Vibration.vibrate([500, 500, 500], false);
+						setTimeout(() => {
+							navigation.popToTop();
+							navigation.navigate("Contacts");
+						}, 5000);
+					} else {
+						const playEndtone = async () => {
+							await Audio.requestPermissionsAsync();
+							await Audio.setAudioModeAsync({
+								staysActiveInBackground: true,
+								shouldDuckAndroid: false,
+								playThroughEarpieceAndroid: false,
+								allowsRecordingIOS: false,
+								playsInSilentModeIOS: true,
+							});
+							const endtone = await Audio.Sound.createAsync(
+								require("../sounds/end.mp3"),
+								{
+									shouldPlay: true,
+								}
+							);
+							await endtone.sound?.unloadAsync();
+							setTimeout(() => {
+								navigation.popToTop();
+								navigation.navigate("Contacts");
+							}, 2000);
+						};
+
+						playEndtone();
+					}
 				}}
 			>
 				<Text style={styles.endCallText}>End Call</Text>
@@ -82,7 +167,7 @@ export default function CallScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#1c1c1e",
+		backgroundColor: "#0d1117",
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingVertical: 50,
@@ -99,17 +184,17 @@ const styles = StyleSheet.create({
 	callerName: {
 		fontSize: 24,
 		fontWeight: "bold",
-		color: "white",
+		color: "#c9d1d9",
 		marginBottom: 10,
 	},
 	callerNumber: {
 		fontSize: 18,
-		color: "#a0a0a0",
+		color: "#8b949e",
 		marginBottom: 10,
 	},
 	callDuration: {
 		fontSize: 16,
-		color: "#a0a0a0",
+		color: "#8b949e",
 	},
 	actionButtons: {
 		flexDirection: "row",
@@ -120,17 +205,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	buttonText: {
-		color: "white",
+		color: "#f0f6fc",
 		marginTop: 5,
 	},
 	endCallButton: {
-		backgroundColor: "#FF3B30",
+		backgroundColor: "#da3633",
 		paddingVertical: 15,
 		paddingHorizontal: 30,
 		borderRadius: 30,
 	},
 	endCallText: {
-		color: "white",
+		color: "#f0f6fc",
 		fontSize: 18,
 		fontWeight: "bold",
 	},

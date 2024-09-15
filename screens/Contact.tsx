@@ -7,15 +7,10 @@ import {
 	ActivityIndicator,
 	RefreshControl,
 } from "react-native";
-import { ContactListItem } from "../components/contactListItem";
-import { Contact, fetchContacts } from "../utility/api";
+import { ContactListItem } from "@/components/contactListItem";
+import { Contact, fetchContacts } from "@/utility/api";
 import { Swipeable } from "react-native-gesture-handler";
-
-declare global {
-	var favoriteContacts: Set<string>;
-}
-
-globalThis.favoriteContacts = new Set<string>();
+import { useFavorites } from "@/context/FavoritesContext";
 
 export default function ContactScreen({ navigation }: any) {
 	const [refreshing, setRefreshing] = useState(false);
@@ -23,6 +18,8 @@ export default function ContactScreen({ navigation }: any) {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const keyExtractor = ({ phone }: { phone: string }) => phone;
+
+	const { favorites, addFavorite, removeFavorite } = useFavorites();
 
 	const onRefresh = useCallback(() => {
 		setLoading(true);
@@ -32,7 +29,7 @@ export default function ContactScreen({ navigation }: any) {
 					const extendedContacts: Contact[] = fetchedContacts.map(
 						(contact) => ({
 							...contact,
-							favorite: false,
+							favorite: favorites.some((fav) => fav.phone === contact.phone),
 						})
 					);
 					setContacts(extendedContacts);
@@ -44,17 +41,15 @@ export default function ContactScreen({ navigation }: any) {
 					setError(true);
 				});
 		}, 2000);
-	}, []);
+	}, [favorites]);
 
 	useEffect(() => {
 		fetchContacts()
 			.then((fetchedContacts: Contact[]) => {
-				const extendedContacts: Contact[] = fetchedContacts.map(
-					(contact) => ({
-						...contact,
-						favorite: false,
-					})
-				);
+				const extendedContacts: Contact[] = fetchedContacts.map((contact) => ({
+					...contact,
+					favorite: favorites.some((fav) => fav.phone === contact.phone),
+				}));
 				setRefreshing(false);
 				setContacts(extendedContacts);
 				setLoading(false);
@@ -65,22 +60,19 @@ export default function ContactScreen({ navigation }: any) {
 				setLoading(false);
 				setError(true);
 			});
-	}, []);
+	}, [favorites]);
 
-	const toggleFavorite = (phone: string) => {
+	const toggleFavorite = (contact: Contact) => {
+		if (contact.favorite) {
+			removeFavorite(contact.phone);
+		} else {
+			addFavorite(contact);
+		}
 		setContacts((prevContacts) =>
-			prevContacts.map((contact) =>
-				contact.phone === phone
-					? { ...contact, favorite: !contact.favorite }
-					: contact
+			prevContacts.map((c) =>
+				c.phone === contact.phone ? { ...c, favorite: !c.favorite } : c
 			)
 		);
-
-		if (globalThis.favoriteContacts.has(phone)) {
-			globalThis.favoriteContacts.delete(phone);
-		} else {
-			globalThis.favoriteContacts.add(phone);
-		}
 	};
 
 	const renderRightActions = (contact: Contact) => {
@@ -99,7 +91,7 @@ export default function ContactScreen({ navigation }: any) {
 		return (
 			<Swipeable
 				renderRightActions={() => renderRightActions(item)}
-				onSwipeableOpen={() => toggleFavorite(phone)}
+				onSwipeableOpen={() => toggleFavorite(item)}
 			>
 				<ContactListItem
 					name={name ? `${name.title}.${name.first} ${name.last}` : ""}
